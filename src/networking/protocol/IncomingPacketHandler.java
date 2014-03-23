@@ -269,6 +269,31 @@ public class IncomingPacketHandler {
 			return UnformattedPacket.CreateResponsePacket(
 					MessageType.LOGOFF.getInt(), code, msg);
 		}
+		
+		case REQUEST_SEND_FILE: {
+			
+			break;
+		}
+		case SEND_FILE_CHUNK: {
+			
+			break;
+		}
+		case CANCEL_SEND_FILE: {
+			
+			break;
+		}
+		case REQUEST_RECEIVE_FILE: {
+			
+			break;
+		}
+		case RECEIVE_FILE_CHUNK: {
+			
+			break;
+		}
+		case CANCEL_RECEIVE_FILE: {
+			
+			break;
+		}
 		}
 		return BAD_MESSAGE_RESPONSE;
 	}
