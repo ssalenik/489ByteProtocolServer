@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import database.IResource;
 import logging.LogLevel;
@@ -42,22 +43,22 @@ public class ClientProcessor extends Thread implements IAsyncClientWriter {
 
 	public UnformattedPacket readPacket() {
 		try {
-			while (rawIn.available() <= 12) {
-				Thread.sleep(50);
+			byte[] headers = new byte[12];
+			int bytesRead = 0;
+			while(bytesRead < 12) {
+			  bytesRead += rawIn.read(headers, bytesRead, 12 - bytesRead);
 			}
-			byte[] hArray = new byte[4];
-			byte[] h2Array = new byte[4];
-			byte[] sArray = new byte[4];
 
-			rawIn.read(hArray, 0, 4);
-			rawIn.read(h2Array, 0, 4);
-			rawIn.read(sArray, 0, 4);
+			byte[] hArray = Arrays.copyOfRange(headers,0,4);
+			byte[] h2Array = Arrays.copyOfRange(headers,4,8);
+			byte[] sArray = Arrays.copyOfRange(headers,8,12);
 
 			int s = ByteBuffer.wrap(sArray).getInt();
 
 			if (s >= MAXIMUM_PACKET_SIZE || s < 0) {
 				// dump the remaining data on the socket (it's assumed garbage)
 				int avail = 0;
+				//TODO: replace call to available()
 				while ((avail = rawIn.available()) > 0) {
 					rawIn.read(new byte[avail], 0, avail);
 				}
@@ -75,11 +76,11 @@ public class ClientProcessor extends Thread implements IAsyncClientWriter {
 			rawIn.read(data, 0, s);
 
 			return new UnformattedPacket(hArray, h2Array, sArray, data);
-		} catch (InterruptedException ex) {
+		/*} catch (InterruptedException ex) {
 			Logfile.writeToFile("Thread interrupted on socket polling loop",
 					LogLevel.ERROR);
 			this.closeConnection();
-			return null;
+			return null;*/
 		} catch (IOException e) {
 			Logfile.writeToFile("Failed to read from socket "
 					+ getHost().getHostAddress(), LogLevel.ERROR);

@@ -3,6 +3,8 @@ package networking;
 import java.net.*;
 import java.io.IOException;
 
+import javax.net.ssl.SSLServerSocketFactory;
+
 import networking.auth.AuthenticationManager;
 import networking.auth.IAuthenticator;
 import database.IResource;
@@ -18,8 +20,18 @@ public class ServerSocketListener extends Thread implements IAuthenticator {
 	private AuthenticationManager manager;
 	
 	public ServerSocketListener(int port, IResource resource) {
+		String keyStorePath = "./ssl/keystore.jks";
+		String keyStorePassword = "javachat";
+		
 		try {
-			this.socket = new ServerSocket(port);
+//			System.out.println("Working Directory = " +  System.getProperty("user.dir"));
+			System.setProperty("javax.net.ssl.keyStore", keyStorePath);
+			System.setProperty("javax.net.ssl.keyStorePassword", keyStorePassword);
+			
+			
+			SSLServerSocketFactory ssf = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
+			this.socket = ssf.createServerSocket(port);
+//			this.socket = new ServerSocket(port);
 			this.resource = resource; 
 			alive = true;
 			
