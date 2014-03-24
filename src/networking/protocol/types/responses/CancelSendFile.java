@@ -2,7 +2,8 @@ package networking.protocol.types.responses;
 
 public enum CancelSendFile {
 	SEND_CANCELLED(0),
-	SEND_NOT_IN_PROGRESS(1);
+	SEND_NOT_IN_PROGRESS(1),
+	NOT_LOGGED_IN(2);
 	
 	private int i;
 	private CancelSendFile(int i) {

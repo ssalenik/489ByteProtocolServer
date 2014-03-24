@@ -5,7 +5,8 @@ public enum RequestSendFile {
 	USER_DOESNT_EXIST(1),
 	MAX_FILE_SIZE_EXCEEDED(2),
 	ANOTHER_SEND_IN_PROGRESS(3),
-	BADLY_FORMATTED(4);
+	BADLY_FORMATTED(4),
+	NOT_LOGGED_IN(5);
 	
 	private int i;
 	private RequestSendFile(int i) {
