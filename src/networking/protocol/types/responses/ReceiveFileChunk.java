@@ -2,7 +2,8 @@ package networking.protocol.types.responses;
 
 public enum ReceiveFileChunk {
 	SENDING_CHUNK(0),
-	RECEIVE_NOT_APPROVED(1);
+	RECEIVE_NOT_APPROVED(1),
+	NOT_LOGGED_IN(2);
 	
 	private int i;
 	private ReceiveFileChunk(int i) {
