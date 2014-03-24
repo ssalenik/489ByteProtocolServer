@@ -3,7 +3,9 @@ package networking;
 import java.net.*;
 import java.io.IOException;
 
+import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocket;
 
 import networking.auth.AuthenticationManager;
 import networking.auth.IAuthenticator;
@@ -14,7 +16,7 @@ import logging.Logfile;
 public class ServerSocketListener extends Thread implements IAuthenticator {
 
 	private boolean alive;
-	private ServerSocket socket;
+	private SSLServerSocket socket;
 	private IResource resource;
 	
 	private AuthenticationManager manager;
@@ -30,7 +32,7 @@ public class ServerSocketListener extends Thread implements IAuthenticator {
 			
 			
 			SSLServerSocketFactory ssf = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
-			this.socket = ssf.createServerSocket(port);
+			this.socket = (SSLServerSocket) ssf.createServerSocket(port);
 //			this.socket = new ServerSocket(port);
 			this.resource = resource; 
 			alive = true;
@@ -48,7 +50,7 @@ public class ServerSocketListener extends Thread implements IAuthenticator {
 		while(alive) {
 			try {
 				Logfile.writeToFile("Waiting for a new client connection", LogLevel.DEBUG);
-				Socket client = socket.accept();
+				SSLSocket client = (SSLSocket) socket.accept();
 				ClientProcessor cp = new ClientProcessor(client, resource, manager);
 				cp.start();
 				Logfile.writeToFile("Accepted connection from: " + client.getInetAddress().getHostAddress(), LogLevel.DEBUG);

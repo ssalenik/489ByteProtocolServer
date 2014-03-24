@@ -48,7 +48,7 @@ public class ClientProcessor extends Thread implements IAsyncClientWriter {
 			while(bytesRead < 12) {
 			  bytesRead += rawIn.read(headers, bytesRead, 12 - bytesRead);
 			}
-
+			
 			byte[] hArray = Arrays.copyOfRange(headers,0,4);
 			byte[] h2Array = Arrays.copyOfRange(headers,4,8);
 			byte[] sArray = Arrays.copyOfRange(headers,8,12);
@@ -81,10 +81,18 @@ public class ClientProcessor extends Thread implements IAsyncClientWriter {
 					LogLevel.ERROR);
 			this.closeConnection();
 			return null;*/
+		} catch(javax.net.ssl.SSLException e) {
+			Logfile.writeToFile("SSL Handshake failed on socket "
+					+ getHost().getHostAddress(), LogLevel.ERROR);
+			this.closeConnection();
+			return null;
 		} catch (IOException e) {
+			//e.printStackTrace();
 			Logfile.writeToFile("Failed to read from socket "
 					+ getHost().getHostAddress(), LogLevel.ERROR);
 			this.closeConnection();
+			return null;
+		} catch (IndexOutOfBoundsException e) {
 			return null;
 		}
 	}
