@@ -73,6 +73,7 @@ public class UnformattedPacket {
 		System.arraycopy(h2Array, 0, arr, 4, 4);
 		System.arraycopy(sArray, 0, arr, 8, 4);
 		System.arraycopy(payload, 0, arr, 12, size);
+		
 		return arr;
 	}
 	
