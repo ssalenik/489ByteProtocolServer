@@ -188,7 +188,16 @@ public class SQLiteJDBC implements IResource {
 				stmt_primary.executeUpdate();
 				stmt_primary.close();
 			} catch (Exception ep) {
-				Logfile.writeToFile("Failed to delete the user " + user + "'s store, probably because it doesn't exist", LogLevel.ERROR);
+				Logfile.writeToFile("Failed to delete the user " + user + "'s data store, probably because it doesn't exist", LogLevel.ERROR);
+			}
+			
+			try {
+				String sql_primary = "DROP TABLE IF EXISTS '" + user + "_files';";
+				PreparedStatement stmt_primary = c.prepareStatement(sql_primary);
+				stmt_primary.executeUpdate();
+				stmt_primary.close();
+			} catch (Exception ep) {
+				Logfile.writeToFile("Failed to delete the user " + user + "'s files store, probably because it doesn't exist", LogLevel.ERROR);
 			}
 			
 			String sql = "DELETE FROM users WHERE USERNAME = '" + user + "';";
@@ -286,5 +295,92 @@ public class SQLiteJDBC implements IResource {
 			Logfile.writeToFile("Failed to query messages for user " + username, LogLevel.ERROR);
 			return new UserMessage[0];
 		}
+	}
+	
+	public synchronized boolean userFilesTableExists(String username) {
+		try {
+			String sql = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='"
+					+ username + "_files';";
+			PreparedStatement stmt = c.prepareStatement(sql);
+			ResultSet rs = stmt.executeQuery();
+			boolean exists = rs.getInt(1) > 0;
+			rs.close();
+			stmt.close();
+			return exists;
+		} catch (Exception e) {
+			Logfile.writeToFile("Failed to check if user files table exists",
+					LogLevel.ERROR);
+			return false;
+		}
+	}
+	
+	public synchronized boolean createUserFilesTable(String username) {
+		try {
+			if (userFilesTableExists(username)) {
+				return false;
+			} else {
+				String sql = "CREATE TABLE " + username + "_files"
+						+ "(ID 			INTEGER 	PRIMARY KEY	AUTOINCREMENT,"
+						+ " USERNAME		TEXT				NOT NULL,"
+						+ " FILENAME		TEXT				NOT NULL,"
+						+ " FILESIZE	INTEGER,"
+						+ " TIME			TEXT				NOT NULL,"
+						+ " DOWNLOADED	INTEGER)";
+				PreparedStatement stmt = c.prepareStatement(sql);
+				stmt.executeUpdate();
+				stmt.close();
+				return true;
+			}
+		} catch (Exception e) {
+			Logfile.writeToFile(
+					"Failed to create the user file table due to error",
+					LogLevel.ERROR);
+			return false;
+		}
+	}
+	
+	public synchronized boolean sendFileToUser(String dUsername, String sUsername, String filename, int filesize){
+		
+		try {
+			String sql = "INSERT INTO "+ dUsername + "_files (USERNAME, FILENAME, FILESIZE, TIME, DOWNLOADED)"
+					+ " VALUES ('" + sUsername + "','" + filename + "','" + filesize + "','" + getDate() + "','0');";
+			PreparedStatement stmt = c.prepareStatement(sql);
+			stmt.executeUpdate();
+			stmt.close();
+			return true;
+		} catch (Exception e) {
+			Logfile.writeToFile("Failed to send file from user " + sUsername + " to " + dUsername, LogLevel.ERROR);
+			return false;
+		}
+	}
+	
+	//TODO: return list of files for user
+	public UserMessage[] getNewUserFiles(String username){
+//		try {
+//			String sql = "SELECT USERNAME,MESSAGE,TIME from " + username + "_data";
+//			PreparedStatement query = c.prepareStatement(sql);
+//			ResultSet rs = query.executeQuery();
+//			ArrayList<UserMessage> ums = new ArrayList<UserMessage>();
+//			while (rs.next()) {
+//				ums.add(new UserMessage(rs.getString(1), rs.getString(2), rs.getString(3)));
+//			}
+//			rs.close();
+//			query.close();
+//			
+//			try {
+//				String sql_clear = "DELETE FROM " + username + "_data";
+//				PreparedStatement clear = c.prepareStatement(sql_clear);
+//				clear.executeUpdate();
+//				clear.close();
+//			} catch (Exception e2) {
+//				Logfile.writeToFile("Failed to clear messages for user " + username, LogLevel.ERROR);
+//			}
+//			
+//			return ums.toArray(new UserMessage[ums.size()]);
+//		} catch (Exception e) {
+//			Logfile.writeToFile("Failed to query messages for user " + username, LogLevel.ERROR);
+//			return new UserMessage[0];
+//		}
+		return new UserMessage[0];
 	}
 }
