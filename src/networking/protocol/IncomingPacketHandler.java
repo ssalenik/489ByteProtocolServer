@@ -97,8 +97,9 @@ public class IncomingPacketHandler {
 			String msg = "";
 
 			if (auth.authenticated()) {
-				boolean created = resource.createUserDataTable(auth.Username);
-				if (created) {
+				boolean created_data_store = resource.createUserDataTable(auth.Username);
+				boolean created_file_store = resource.createUserFilesTable(auth.Username);
+				if (created_data_store && created_file_store) {
 					code = CreateStore.STORE_CREATED.getInt();
 					msg = "User's data store created";
 				} else {
