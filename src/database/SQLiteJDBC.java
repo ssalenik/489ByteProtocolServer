@@ -323,6 +323,7 @@ public class SQLiteJDBC implements IResource {
 						+ "(ID 			INTEGER 	PRIMARY KEY	AUTOINCREMENT,"
 						+ " USERNAME		TEXT				NOT NULL,"
 						+ " FILENAME		TEXT				NOT NULL,"
+						+ " DBFILENAME		TEXT				NOT NULL,"
 						+ " FILESIZE	INTEGER,"
 						+ " TIME			TEXT				NOT NULL,"
 						+ " DOWNLOADED	INTEGER)";
@@ -339,11 +340,11 @@ public class SQLiteJDBC implements IResource {
 		}
 	}
 	
-	public synchronized boolean sendFileToUser(String dUsername, String sUsername, String filename, int filesize){
+	public synchronized boolean sendFileToUser(String dUsername, String sUsername, String filename, String dbFilename, int filesize){
 		
 		try {
-			String sql = "INSERT INTO "+ dUsername + "_files (USERNAME, FILENAME, FILESIZE, TIME, DOWNLOADED)"
-					+ " VALUES ('" + sUsername + "','" + filename + "','" + filesize + "','" + getDate() + "','0');";
+			String sql = "INSERT INTO "+ dUsername + "_files (USERNAME, FILENAME, DBFILENAME, FILESIZE, TIME, DOWNLOADED)"
+					+ " VALUES ('" + sUsername + "','" + filename + "','" + filename + "','" + filesize + "','" + getDate() + "','0');";
 			PreparedStatement stmt = c.prepareStatement(sql);
 			stmt.executeUpdate();
 			stmt.close();

@@ -14,7 +14,7 @@ public interface IResource {
 	public boolean createUserFilesTable(String username);
 	public boolean userFilesTableExists(String username);
 	
-	public boolean sendFileToUser(String dUsername, String sUsername, String filename, int filesize);
+	public boolean sendFileToUser(String dUsername, String sUsername, String filename, String dbFilename, int filesize);
 	// TODO: public UserFile[] getNewUserFiles(String username);
 	// TODO: public boolean userFileFinishedDownloading(String username, int fileid);
 	
