@@ -271,8 +271,28 @@ public class IncomingPacketHandler {
 		}
 		
 		case REQUEST_SEND_FILE: {
+			int code = RequestSendFile.BADLY_FORMATTED.getInt();
+			String msg = "";
+
+			if (auth.authenticated()) {
+				// check if another file send is in progress
+				
+				// check filesize (and filename?)
+				
+				// create entry in database
+				// create file in dir
+				
+				// set vars to accepting file
+				
+				// send reply
+				
+			} else {
+				code = RequestSendFile.NOT_LOGGED_IN.getInt();
+				msg = "Must login first";
+			}
+			return UnformattedPacket.CreateResponsePacket(
+					MessageType.REQUEST_SEND_FILE.getInt(), code, msg);
 			
-			break;
 		}
 		case SEND_FILE_CHUNK: {
 			
