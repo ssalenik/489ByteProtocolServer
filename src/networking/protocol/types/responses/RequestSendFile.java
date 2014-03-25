@@ -2,11 +2,12 @@ package networking.protocol.types.responses;
 
 public enum RequestSendFile {
 	SEND_APPROVED(0),
-	USER_DOESNT_EXIST(1),
-	MAX_FILE_SIZE_EXCEEDED(2),
-	ANOTHER_SEND_IN_PROGRESS(3),
-	BADLY_FORMATTED(4),
-	NOT_LOGGED_IN(5);
+	USER_STORE_DOESNT_EXIST(1),
+	USER_DOESNT_EXIST(2),
+	MAX_FILE_SIZE_EXCEEDED(3),
+	ANOTHER_SEND_IN_PROGRESS(4),
+	BADLY_FORMATTED(5),
+	NOT_LOGGED_IN(6);
 	
 	private int i;
 	private RequestSendFile(int i) {
