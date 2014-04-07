@@ -121,7 +121,7 @@ public class FileUploader {
 	}
 	
 	public double getUploadPercent() {
-		return (double)bytesWritten/(double)currentFileSize;
+		return (double)bytesWritten/(double)currentFileSize * 100.0;
 	}
 	
 	public void cancelUpload() {
