@@ -297,7 +297,7 @@ public class IncomingPacketHandler {
 						
 						//try converting filesize to int and check that its valid
 						try {
-							filesize = Integer.getInteger(filesize_str);
+							filesize = Integer.parseInt(filesize_str);
 						} catch (java.lang.NumberFormatException e) {
 							// not an int
 						}
