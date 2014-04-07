@@ -1,5 +1,7 @@
 package networking.protocol;
 
+import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.*;
 
 import database.FileUploader;
@@ -19,6 +21,7 @@ public class IncomingPacketHandler {
 	private AuthenticationManager auth_manager;
 	private IAsyncClientWriter asyncClientWriter;
 	private FileUploader fileUploader;
+	private DecimalFormat dformat = new DecimalFormat("#.##");
 
 	private static final UnformattedPacket BAD_MESSAGE_RESPONSE = new UnformattedPacket(
 			MessageType.BADLY_FORMATTED_MESSAGE.getInt(),
@@ -288,7 +291,7 @@ public class IncomingPacketHandler {
 				if (st.countTokens() >= 3) {
 					String u = st.nextToken();
 					String filesize_str = st.nextToken();
-					int filesize = -1;
+					long filesize = -1;
 					String filename = getRemaining(payload, u.length() + filesize_str.length());
 
 					boolean user_exists = resource.userFilesTableExists(u);
@@ -311,7 +314,7 @@ public class IncomingPacketHandler {
 								if(fileUploader.startFileUpload(u, filename, filesize)) {
 									// file upload OK!
 									code = RequestSendFile.SEND_APPROVED.getInt();
-									msg = "";
+									msg = "File transfer started.";
 								} else {
 									// something went wrong trying to write to the disk
 									code = RequestSendFile.FAILED_TO_START_SEND.getInt();
@@ -343,8 +346,43 @@ public class IncomingPacketHandler {
 			
 		}
 		case SEND_FILE_CHUNK: {
-			
-			break;
+			int code = SendFileChunk.SEND_NOT_APPROVED.getInt();
+			String msg = "";
+
+			if (auth.authenticated()) {
+				// check if upload is in progress
+				if(fileUploader.isUploadInProgress()) {
+					// get bytes
+					byte[] payload = p.getPayload();
+					
+					try {
+						fileUploader.uploadFileChunk(payload);
+						// assume everything went OK
+						code = SendFileChunk.RECEIVED_CHUNK.getInt();
+						msg = "Transfered " + dformat.format(fileUploader.getUploadPercent()) + "%.";
+						System.out.println(msg);
+					} catch (IllegalArgumentException e) {
+						// bytes send make file exceed size
+						code = SendFileChunk.CHUNK_EXCEEDS_EXPECTED_SIZE.getInt();
+						msg = "Received file chunk makes file exceed expected file size. File transfer cancelled.";
+						// stop file transfer
+						fileUploader.cancelUpload();
+					} catch (IOException e) {
+						// error writing to file
+						code = SendFileChunk.IO_ERROR.getInt();
+						msg = "Error writing data to file on server.";
+					}
+				} else {
+					// upload is not in progress
+					code = SendFileChunk.SEND_NOT_APPROVED.getInt();
+					msg = "File transfer has not been approved.";
+				}
+			} else {
+				code = SendFileChunk.NOT_LOGGED_IN.getInt();
+				msg = "Must login first";
+			}
+			return UnformattedPacket.CreateResponsePacket(
+					MessageType.SEND_FILE_CHUNK.getInt(), code, msg);
 		}
 		case CANCEL_SEND_FILE: {
 			

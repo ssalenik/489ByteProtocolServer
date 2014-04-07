@@ -14,7 +14,7 @@ public class FileUploader {
 	
 	SimpleDateFormat dateFormat;
 	File currentFile;
-	int currentFileSize;
+	long currentFileSize;
 	private int bytesWritten;
 	private String currentDBFilename;
 	private boolean uploadInProgress;
@@ -28,7 +28,7 @@ public class FileUploader {
 		bytesWritten = -1;
 	}
 	
-	public boolean startFileUpload(String username, String filename, int filesize) {
+	public boolean startFileUpload(String username, String filename, long filesize) {
 		if(uploadInProgress) {
 			Logfile.writeToFile("Cannot start new upload, alreayd in progress.", LogLevel.INFO);
 			return false;
@@ -93,6 +93,7 @@ public class FileUploader {
 			if(bytesWritten == currentFileSize) {
 				uploadInProgress = false;
 				uploadComplete = true;
+				fileOutput.close();
 			}
 		} else {
 			// upload not started
@@ -113,6 +114,25 @@ public class FileUploader {
 	
 	public int getBytesWritten() {
 		return bytesWritten;
+	}
+	
+	public long getCurrentFileSize() {
+		return currentFileSize;
+	}
+	
+	public double getUploadPercent() {
+		return (double)bytesWritten/(double)currentFileSize;
+	}
+	
+	public void cancelUpload() {
+		uploadInProgress = false;
+		uploadComplete = false;
+		try {
+			fileOutput.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 }

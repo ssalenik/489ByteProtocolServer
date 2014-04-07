@@ -3,7 +3,9 @@ package networking.protocol.types.responses;
 public enum SendFileChunk {
 	RECEIVED_CHUNK(0),
 	SEND_NOT_APPROVED(1),
-	NOT_LOGGED_IN(2);
+	NOT_LOGGED_IN(2),
+	CHUNK_EXCEEDS_EXPECTED_SIZE(3),
+	IO_ERROR(4);
 	
 	private int i;
 	private SendFileChunk(int i) {
