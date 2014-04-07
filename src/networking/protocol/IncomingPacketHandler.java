@@ -2,6 +2,7 @@ package networking.protocol;
 
 import java.util.*;
 
+import database.FileUploader;
 import database.IResource;
 import database.UserMessage;
 import networking.UnformattedPacket;
@@ -17,6 +18,7 @@ public class IncomingPacketHandler {
 	private IResource resource;
 	private AuthenticationManager auth_manager;
 	private IAsyncClientWriter asyncClientWriter;
+	private FileUploader fileUploader;
 
 	private static final UnformattedPacket BAD_MESSAGE_RESPONSE = new UnformattedPacket(
 			MessageType.BADLY_FORMATTED_MESSAGE.getInt(),
@@ -31,6 +33,9 @@ public class IncomingPacketHandler {
 		this.asyncClientWriter = writer;
 
 		this.auth = this.auth_manager.EmptyToken();
+		
+		// one FileUploader per packet handler
+		this.fileUploader = new FileUploader();
 	}
 
 	// / Simply a wrapper to keep connection alive
@@ -276,17 +281,59 @@ public class IncomingPacketHandler {
 			String msg = "";
 
 			if (auth.authenticated()) {
-				// check if another file send is in progress
-				
-				// check filesize (and filename?)
-				
-				// create entry in database
-				// create file in dir
-				
-				// set vars to accepting file
-				
-				// send reply
-				
+				// check message formatting and stuff
+				String payload = p.payloadAsString();
+				StringTokenizer st = new StringTokenizer(payload,
+						FIELD_TERMINATOR);
+				if (st.countTokens() >= 3) {
+					String u = st.nextToken();
+					String filesize_str = st.nextToken();
+					int filesize = -1;
+					String filename = getRemaining(payload, u.length() + filesize_str.length());
+
+					boolean user_exists = resource.userFilesTableExists(u);
+					if (user_exists) {
+						// can send to user
+						
+						//try converting filesize to int and check that its valid
+						try {
+							filesize = Integer.getInteger(filesize_str);
+						} catch (java.lang.NumberFormatException e) {
+							// not an int
+						}
+						
+						// basic check on filesize
+						if(filesize >= 0) {
+							// filesize OK
+							// check if another file send is in progress
+							if(!fileUploader.isUploadInProgress()) {
+								// try starting file upload
+								if(fileUploader.startFileUpload(u, filename, filesize)) {
+									// file upload OK!
+									code = RequestSendFile.SEND_APPROVED.getInt();
+									msg = "";
+								} else {
+									// something went wrong trying to write to the disk
+									code = RequestSendFile.FAILED_TO_START_SEND.getInt();
+									msg = "Could not start file send (likely an error creating the file on the server).";
+								}
+							} else {
+								code = RequestSendFile.ANOTHER_SEND_IN_PROGRESS.getInt();
+								msg = "Another file send is currently in progress." +
+									"Client must finish or cancel the current file send before starting another one.";
+							}
+						} else {
+							code = RequestSendFile.BADLY_FORMATTED.getInt();
+							msg = "The filesize argument is either not an int or is less than 0.";
+						}
+					} else {
+						code = RequestSendFile.USER_DOESNT_EXIST.getInt();
+						msg = "The specified user (or at least their file store) doesn't exist";
+					}
+				} else {
+					code = RequestSendFile.BADLY_FORMATTED.getInt();
+					msg = "Must have the format <username>,<file size>,<file name>";
+				}
 			} else {
 				code = RequestSendFile.NOT_LOGGED_IN.getInt();
 				msg = "Must login first";

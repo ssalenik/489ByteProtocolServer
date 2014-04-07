@@ -2,7 +2,7 @@ package networking.protocol.types.responses;
 
 public enum RequestSendFile {
 	SEND_APPROVED(0),
-	USER_STORE_DOESNT_EXIST(1),
+	FAILED_TO_START_SEND(1),
 	USER_DOESNT_EXIST(2),
 	MAX_FILE_SIZE_EXCEEDED(3),
 	ANOTHER_SEND_IN_PROGRESS(4),
