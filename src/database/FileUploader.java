@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import logging.LogLevel;
+import logging.Logfile;
+
 public class FileUploader {
 	
 	SimpleDateFormat dateFormat;
@@ -27,6 +30,7 @@ public class FileUploader {
 	
 	public boolean startFileUpload(String username, String filename, int filesize) {
 		if(uploadInProgress) {
+			Logfile.writeToFile("Cannot start new upload, alreayd in progress.", LogLevel.INFO);
 			return false;
 		}
 		// TODO: check filename validity?
@@ -36,22 +40,26 @@ public class FileUploader {
 		
 		// check if we can write this file
 		currentFile = new File("./" + dbFilename);
-		long usableSpace = currentFile.getUsableSpace();
-		if(usableSpace < filesize) {
-			// not enough space
-			// TODO: log error
-			return false;
-		}
+		// for some reason get space returns 0
+//		long usableSpace = currentFile.getUsableSpace();
+//		if(usableSpace < filesize) {
+//			// not enough space
+//			// TODO: log error
+//			Logfile.writeToFile("Cannot start new upload, not enough space.", LogLevel.INFO);
+//			return false;
+//		}
 		
 		// TODO: make sure file doesn't exist already, add an integer if it does
 		try {
 			if(!currentFile.createNewFile()) {
 				// TODO: log error
+				Logfile.writeToFile("Cannot start new upload, could not create file on disk.", LogLevel.INFO);
 				return false;
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			Logfile.writeToFile("Cannot start new upload, error creating file on disk.", LogLevel.INFO);
 			return false;
 		}
 		
@@ -61,6 +69,7 @@ public class FileUploader {
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			Logfile.writeToFile("Cannot start new upload, error creating file output stream.", LogLevel.INFO);
 			return false;
 		}
 		
