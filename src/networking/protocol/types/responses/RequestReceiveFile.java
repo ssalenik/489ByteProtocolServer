@@ -6,7 +6,8 @@ public enum RequestReceiveFile {
 	FILE_DOESNT_EXIST(2),
 	ANOTHER_RECEIVE_IN_PROGRESS(3),
 	BADLY_FORMATTED(4),
-	NOT_LOGGED_IN(5);
+	NOT_LOGGED_IN(5),
+	FAILED_TO_START_RECEIVE(6);
 	
 	private int i;
 	private RequestReceiveFile(int i) {

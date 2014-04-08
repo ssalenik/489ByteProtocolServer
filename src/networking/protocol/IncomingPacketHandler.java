@@ -1,9 +1,11 @@
 package networking.protocol;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.util.*;
 
+import database.FileSender;
 import database.FileUploader;
 import database.IResource;
 import database.UserFile;
@@ -22,6 +24,7 @@ public class IncomingPacketHandler {
 	private AuthenticationManager auth_manager;
 	private IAsyncClientWriter asyncClientWriter;
 	private FileUploader fileUploader;
+	private FileSender fileSender;
 	private DecimalFormat dformat = new DecimalFormat("#.##");
 	
 	// used to save the newest file id (wrt the db)
@@ -44,6 +47,7 @@ public class IncomingPacketHandler {
 		
 		// one FileUploader per packet handler
 		this.fileUploader = new FileUploader();
+		this.fileSender = new FileSender();
 	}
 
 	// / Simply a wrapper to keep connection alive
@@ -340,8 +344,9 @@ public class IncomingPacketHandler {
 					String u = st.nextToken();
 					String filesize_str = st.nextToken();
 					long filesize = -1;
-					String filename = getRemaining(payload, u.length() + filesize_str.length());
-
+					// note: the + 1 is needed below because getRemaining only accounts for one comma
+					String filename = getRemaining(payload, u.length() + filesize_str.length() + 1);
+					
 					boolean user_exists = resource.userFilesTableExists(u);
 					if (user_exists) {
 						// can send to user
@@ -408,7 +413,6 @@ public class IncomingPacketHandler {
 						// assume everything went OK
 						code = SendFileChunk.RECEIVED_CHUNK.getInt();
 						msg = "Transfered " + dformat.format(fileUploader.getUploadPercent()) + "%.";
-						System.out.println(msg);
 					} catch (IllegalArgumentException e) {
 						// bytes send make file exceed size
 						code = SendFileChunk.CHUNK_EXCEEDS_EXPECTED_SIZE.getInt();
@@ -448,12 +452,112 @@ public class IncomingPacketHandler {
 			break;
 		}
 		case REQUEST_RECEIVE_FILE: {
-			
-			break;
+			int code = RequestReceiveFile.BADLY_FORMATTED.getInt();
+			String msg = "";
+
+			if (auth.authenticated()) {
+				// check message formatting and stuff
+				String payload = p.payloadAsString();
+				StringTokenizer st = new StringTokenizer(payload,
+						FIELD_TERMINATOR);
+				if (st.countTokens() >= 2) {
+					String u = st.nextToken();
+					String file_id_str = st.nextToken();
+					int file_id = -1;
+					
+					try {
+						file_id = Integer.parseInt(file_id_str);
+					} catch (NumberFormatException e) {
+						file_id = -1;
+					}
+					
+					if(file_id > 0) {
+						boolean user_exists = resource.userFilesTableExists(u);
+						if (user_exists) {
+							// can send to user
+							// try getting the file, should only return 0 or 1
+							// if returns greater than 1, just return the first one
+							UserFile[] userFiles = resource.getUserFile(u, file_id);
+							
+							if(userFiles.length > 0) {
+								// file exists
+								// check if another file send is in progress
+								if(!fileSender.isSendInProgress()) {
+									// try starting file upload
+									if(fileSender.startFileSend(userFiles[0])) {
+										// file upload OK!
+										code = RequestReceiveFile.RECEIVE_APPROVED.getInt();
+										msg = "File transfer started.";
+									} else {
+										// something went wrong trying to write to the disk
+										code = RequestReceiveFile.FAILED_TO_START_RECEIVE.getInt();
+										msg = "Could not start file receive (likely an error opening the file on the server).";
+									}
+								} else {
+									code = RequestReceiveFile.ANOTHER_RECEIVE_IN_PROGRESS.getInt();
+									msg = "Another file receive is currently in progress." +
+										"Client must finish or cancel the current file receive before starting another one.";
+								}
+							} else {
+								code = RequestReceiveFile.FILE_DOESNT_EXIST.getInt();
+								msg = "The specified file does not exist.";
+							}
+						} else {
+							code = RequestReceiveFile.USER_DOESNT_EXIST.getInt();
+							msg = "The specified user (or at least their file store) doesn't exist";
+						}
+					} else {
+						code = RequestReceiveFile.BADLY_FORMATTED.getInt();
+						msg = "The <file id> must be an integer greater than 0.";
+					}	
+				} else {
+					code = RequestReceiveFile.BADLY_FORMATTED.getInt();
+					msg = "Must have the format <username>,<file id>";
+				}
+			} else {
+				code = RequestReceiveFile.NOT_LOGGED_IN.getInt();
+				msg = "Must login first";
+			}
+			return UnformattedPacket.CreateResponsePacket(
+					MessageType.REQUEST_RECEIVE_FILE.getInt(), code, msg);
 		}
 		case RECEIVE_FILE_CHUNK: {
-			
-			break;
+			int code = ReceiveFileChunk.RECEIVE_NOT_APPROVED.getInt();
+			String msg = "";
+
+			if (auth.authenticated()) {
+				// check if upload is in progress
+				if(fileSender.isSendInProgress()) {
+					byte[] payload = fileSender.getNextChunk();
+					code = ReceiveFileChunk.SENDING_CHUNK.getInt();
+					
+					// check if last chunk is being sent
+					if(fileSender.isSendComplete()) {
+						//complete, so remove from db
+						resource.deleteUserFile(auth.Username, fileSender.getFileID());
+						// and delete from system
+						// delete current file
+						try {
+							Files.deleteIfExists(fileSender.getCurrentFile().toPath());
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+					}
+					
+					return UnformattedPacket.CreateResponsePacket(
+							MessageType.RECEIVE_FILE_CHUNK.getInt(), code, payload);
+				} else {
+					// upload is not in progress
+					code = SendFileChunk.SEND_NOT_APPROVED.getInt();
+					msg = "File transfer has not been approved.";
+				}
+			} else {
+				code = ReceiveFileChunk.NOT_LOGGED_IN.getInt();
+				msg = "Must login first";
+			}
+			return UnformattedPacket.CreateResponsePacket(
+					MessageType.RECEIVE_FILE_CHUNK.getInt(), code, msg);
 		}
 		case CANCEL_RECEIVE_FILE: {
 			

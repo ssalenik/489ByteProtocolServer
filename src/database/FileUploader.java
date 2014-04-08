@@ -90,8 +90,29 @@ public class FileUploader {
 		}
 		
 		// assume everything went OK
-		currentDBFilename = currentFile.toString();
+		try {
+			// get path
+			currentDBFilename = currentFile.getCanonicalPath().toString();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			// delete current file
+			try {
+				Files.deleteIfExists(currentFile.toPath());
+			} catch (IOException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			}
+			try {
+				fileOutput.close();
+			} catch (IOException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			}
+			return false;
+		}
 		uploadInProgress = true;
+		uploadComplete = false;
 		currentFileSize = filesize;
 		bytesWritten = 0;
 		return true;

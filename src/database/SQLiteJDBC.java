@@ -344,7 +344,7 @@ public class SQLiteJDBC implements IResource {
 		
 		try {
 			String sql = "INSERT INTO "+ dUsername + "_files (USERNAME, FILENAME, DBFILENAME, FILESIZE, TIME, DOWNLOADED)"
-					+ " VALUES ('" + sUsername + "','" + filename + "','" + filename + "','" + filesize + "','" + getDate() + "','0');";
+					+ " VALUES ('" + sUsername + "','" + filename + "','" + dbFilename + "','" + filesize + "','" + getDate() + "','0');";
 			PreparedStatement stmt = c.prepareStatement(sql);
 			stmt.executeUpdate();
 			stmt.close();
