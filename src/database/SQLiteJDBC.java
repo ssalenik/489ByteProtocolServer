@@ -340,7 +340,7 @@ public class SQLiteJDBC implements IResource {
 		}
 	}
 	
-	public synchronized boolean sendFileToUser(String dUsername, String sUsername, String filename, String dbFilename, int filesize){
+	public synchronized boolean sendFileToUser(String dUsername, String sUsername, String filename, String dbFilename, long filesize){
 		
 		try {
 			String sql = "INSERT INTO "+ dUsername + "_files (USERNAME, FILENAME, DBFILENAME, FILESIZE, TIME, DOWNLOADED)"

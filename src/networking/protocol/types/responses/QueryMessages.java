@@ -3,7 +3,8 @@ package networking.protocol.types.responses;
 public enum QueryMessages {
 	NO_MESSAGES(0),
 	MESSAGES(1),
-	NOT_LOGGED_IN(2);
+	NOT_LOGGED_IN(2),
+	FILES(3);
 	
 	private int i;
 	private QueryMessages(int i) {

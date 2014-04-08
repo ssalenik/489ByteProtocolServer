@@ -6,6 +6,7 @@ import java.util.*;
 
 import database.FileUploader;
 import database.IResource;
+import database.UserFile;
 import database.UserMessage;
 import networking.UnformattedPacket;
 import networking.auth.AuthenticationManager;
@@ -22,6 +23,10 @@ public class IncomingPacketHandler {
 	private IAsyncClientWriter asyncClientWriter;
 	private FileUploader fileUploader;
 	private DecimalFormat dformat = new DecimalFormat("#.##");
+	
+	// used to save the newest file id (wrt the db)
+	// of which the currently logged in user has been already notified
+	private int newestFileId = 0; 
 
 	private static final UnformattedPacket BAD_MESSAGE_RESPONSE = new UnformattedPacket(
 			MessageType.BADLY_FORMATTED_MESSAGE.getInt(),
@@ -192,7 +197,44 @@ public class IncomingPacketHandler {
 
 			if (auth.authenticated()) {
 				UserMessage[] msgs = resource.getNewUserMessages(auth.Username);
-				if (msgs.length > 0) {
+				UserFile[] files = resource.getNewUserFiles(auth.Username, newestFileId);
+				
+				if (files.length > 0) {
+					// if there are files for the user, first send him all of the new messages
+					// then send all the new files
+					
+					// update up to which files the user has been notified of
+					int last = files.length - 1;
+					this.newestFileId = files[last].id;
+					
+					// This loop sends all the messages over the wire then returns to the processing thread
+					if(msgs.length > 0) {
+						for (int i = 0; i < msgs.length; i++) {
+							String msgtxt = msgs[i].format();
+							UnformattedPacket up = UnformattedPacket
+									.CreateResponsePacket(
+											MessageType.QUERY_MESSAGES.getInt(),
+											QueryMessages.MESSAGES.getInt(), msgtxt);
+							asyncClientWriter.writePacket(up);
+						}
+					}
+					
+					// this loop sends the first n - 1 files before returning to the processing thread
+					int i = 0;
+					for (; i < files.length - 1; i++) {
+						String filetxt = files[i].format();
+						UnformattedPacket up = UnformattedPacket
+								.CreateResponsePacket(
+										MessageType.QUERY_MESSAGES.getInt(),
+										QueryMessages.FILES.getInt(), filetxt);
+						asyncClientWriter.writePacket(up);
+					}
+					UserFile lastfile = files[i];
+					
+					code = QueryMessages.FILES.getInt();
+					msg = lastfile.format();
+					
+				} else if (msgs.length > 0) {
 					int i = 0;
 					// This loop sends the first (n-1) messages over the wire before returning the
 					// last message in the queue to the processing thread 
@@ -240,6 +282,9 @@ public class IncomingPacketHandler {
 					case GOOD:
 						code = Login.LOGIN_OK.getInt();
 						msg = "Login successful";
+						// reset stuff, just in case
+						fileUploader.cancelUpload();
+						newestFileId = 0;
 						break;
 					case ALREADY_LOGGED_IN:
 						code = Login.ALREADY_LOGGED_IN.getInt();
@@ -271,6 +316,9 @@ public class IncomingPacketHandler {
 				auth.logout();
 				code = Logoff.LOGOFF_OK.getInt();
 				msg = "Logoff successsful";
+				// reset stuff
+				fileUploader.cancelUpload();
+				newestFileId = 0;
 			} else {
 				msg = "You are not logged in";
 			}
@@ -371,6 +419,17 @@ public class IncomingPacketHandler {
 						// error writing to file
 						code = SendFileChunk.IO_ERROR.getInt();
 						msg = "Error writing data to file on server.";
+					}
+					
+					// check if upload was complete
+					if(fileUploader.isUploadComplete()) {
+						//complete, so add file to db
+						resource.sendFileToUser(
+								fileUploader.getCurrentDestUsername(),
+								auth.Username,
+								fileUploader.getCurrentFilename(),
+								fileUploader.getCurrentDBFilename(),
+								fileUploader.getCurrentFileSize());
 					}
 				} else {
 					// upload is not in progress

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -17,9 +18,11 @@ public class FileUploader {
 	long currentFileSize;
 	private int bytesWritten;
 	private String currentDBFilename;
+	private String currentFilename;
 	private boolean uploadInProgress;
 	private boolean uploadComplete;
 	private FileOutputStream fileOutput;
+	private String currentDestUsername;
 	
 	public FileUploader() {
 		dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS");
@@ -37,6 +40,11 @@ public class FileUploader {
 		// get dbFilename
 		String uploadStarted = dateFormat.format(new Date());
 		String dbFilename = "" + username + "_file_" + uploadStarted;
+		
+		// save dest user
+		currentDestUsername = username;
+		// save original filename
+		currentFilename = filename;
 		
 		// check if we can write this file
 		currentFile = new File("./" + dbFilename);
@@ -70,6 +78,14 @@ public class FileUploader {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			Logfile.writeToFile("Cannot start new upload, error creating file output stream.", LogLevel.INFO);
+			
+			// delete file
+			try {
+				Files.deleteIfExists(currentFile.toPath());
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			return false;
 		}
 		
@@ -112,6 +128,14 @@ public class FileUploader {
 		return currentDBFilename;
 	}
 	
+	public String getCurrentFilename() {
+		return currentFilename;
+	}
+	
+	public String getCurrentDestUsername() {
+		return currentDestUsername;
+	}
+	
 	public int getBytesWritten() {
 		return bytesWritten;
 	}
@@ -125,14 +149,29 @@ public class FileUploader {
 	}
 	
 	public void cancelUpload() {
-		uploadInProgress = false;
-		uploadComplete = false;
-		try {
-			fileOutput.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		// only cancel if in progress
+		if(uploadInProgress) {
+			uploadInProgress = false;
+			uploadComplete = false;
+			
+			// delete current file
+			try {
+				Files.deleteIfExists(currentFile.toPath());
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			try {
+				fileOutput.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} else {
+			// nothing
+			return;
 		}
+		
 	}
 	
 }
