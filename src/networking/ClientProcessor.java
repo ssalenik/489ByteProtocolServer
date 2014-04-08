@@ -73,7 +73,10 @@ public class ClientProcessor extends Thread implements IAsyncClientWriter {
 			}
 
 			byte[] data = new byte[s];
-			rawIn.read(data, 0, s);
+			bytesRead = 0;
+			while(bytesRead < s) {
+				bytesRead += rawIn.read(data, bytesRead, s - bytesRead);
+			}
 
 			return new UnformattedPacket(hArray, h2Array, sArray, data);
 		/*} catch (InterruptedException ex) {

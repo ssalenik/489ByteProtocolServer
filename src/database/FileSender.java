@@ -75,6 +75,13 @@ public class FileSender {
 			if(bytesSent >= currentFileSize) {
 				sendInProgress = false;
 				sendComplete = true;
+				
+				try {
+					fileStream.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			
 			return bytesToSend;
