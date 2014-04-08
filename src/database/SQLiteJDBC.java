@@ -355,33 +355,69 @@ public class SQLiteJDBC implements IResource {
 		}
 	}
 	
-	//TODO: return list of files for user
-	public UserMessage[] getNewUserFiles(String username){
-//		try {
-//			String sql = "SELECT USERNAME,MESSAGE,TIME from " + username + "_data";
-//			PreparedStatement query = c.prepareStatement(sql);
-//			ResultSet rs = query.executeQuery();
-//			ArrayList<UserMessage> ums = new ArrayList<UserMessage>();
-//			while (rs.next()) {
-//				ums.add(new UserMessage(rs.getString(1), rs.getString(2), rs.getString(3)));
-//			}
-//			rs.close();
-//			query.close();
-//			
-//			try {
-//				String sql_clear = "DELETE FROM " + username + "_data";
-//				PreparedStatement clear = c.prepareStatement(sql_clear);
-//				clear.executeUpdate();
-//				clear.close();
-//			} catch (Exception e2) {
-//				Logfile.writeToFile("Failed to clear messages for user " + username, LogLevel.ERROR);
-//			}
-//			
-//			return ums.toArray(new UserMessage[ums.size()]);
-//		} catch (Exception e) {
-//			Logfile.writeToFile("Failed to query messages for user " + username, LogLevel.ERROR);
-//			return new UserMessage[0];
-//		}
-		return new UserMessage[0];
+	//returns list of files for user after starting id
+	public UserFile[] getNewUserFiles(String username, int id){
+		try {
+			String sql = "SELECT ID,USERNAME,FILENAME,FILESIZE,DBFILENAME,TIME from " + username + "_files WHERE ID>" + id;
+			PreparedStatement query = c.prepareStatement(sql);
+			ResultSet rs = query.executeQuery();
+			ArrayList<UserFile> ums = new ArrayList<UserFile>();
+			while (rs.next()) {
+				ums.add(new UserFile(
+						Integer.parseInt(rs.getString(1)),	// id
+						rs.getString(2), 					// username
+						rs.getString(3),					// filename
+						Long.parseLong(rs.getString(4)),	// size
+						rs.getString(5),					// dbfilename
+						rs.getString(6)));					// time
+			}
+			rs.close();
+			query.close();
+			
+			return ums.toArray(new UserFile[ums.size()]);
+		} catch (Exception e) {
+			Logfile.writeToFile("Failed to query files for user " + username, LogLevel.ERROR);
+			return new UserFile[0];
+		}
+	}
+	
+	// returns the file with the specified id
+	// should only be one or zero since ids are unique
+	public UserFile[] getUserFile(String username, int file_id) {
+		try {
+			String sql = "SELECT ID,USERNAME,FILENAME,FILESIZE,DBFILENAME,TIME from " + username + "_files WHERE ID=" + file_id;
+			PreparedStatement query = c.prepareStatement(sql);
+			ResultSet rs = query.executeQuery();
+			ArrayList<UserFile> ums = new ArrayList<UserFile>();
+			while (rs.next()) {
+				ums.add(new UserFile(
+						Integer.parseInt(rs.getString(1)),	// id
+						rs.getString(2), 					// username
+						rs.getString(3),					// filename
+						Long.parseLong(rs.getString(4)),	// size
+						rs.getString(5),					// dbfilename
+						rs.getString(6)));					// time
+			}
+			rs.close();
+			query.close();
+			
+			return ums.toArray(new UserFile[ums.size()]);
+		} catch (Exception e) {
+			Logfile.writeToFile("Failed to query files for user " + username, LogLevel.ERROR);
+			return new UserFile[0];
+		}
+	}
+	
+	public boolean deleteUserFile(String username, int file_id) {
+		try {
+			String sql_clear = "DELETE FROM " + username + "_files WHERE ID=" + file_id;
+			PreparedStatement clear = c.prepareStatement(sql_clear);
+			clear.executeUpdate();
+			clear.close();
+			return true;
+		} catch (Exception e) {
+			Logfile.writeToFile("Failed to delete file " + file_id + " for user " + username, LogLevel.ERROR);
+			return false;
+		}
 	}
 }
